@@ -1,4 +1,4 @@
-kcoreaddons_add_plugin(qpilotsync_calendar
+kcoreaddons_add_plugin(wildpalms_calendar
     SOURCES
         calendarconduit.cpp
         calendarconduit.h
@@ -6,11 +6,11 @@ kcoreaddons_add_plugin(qpilotsync_calendar
         calendarmapper.h
         calendarview.cpp
         calendarview.h
-    INSTALL_NAMESPACE "qpilotsync/conduits"
+    INSTALL_NAMESPACE "wildpalms/conduits"
 )
 
-target_link_libraries(qpilotsync_calendar
-    QPilotCore
+target_link_libraries(wildpalms_calendar
+    WildPalmsCore
     KF6::CoreAddons
     KF6::CalendarCore
     KF6::I18n

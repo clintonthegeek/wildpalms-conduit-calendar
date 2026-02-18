@@ -167,7 +167,7 @@ void CalendarView::loadEvents()
             event.isRecurring = kcalEvent->recurs();
 
             // Parse record ID from custom property
-            QString recordIdStr = kcalEvent->customProperty("QPILOTSYNC", "RECORD_ID");
+            QString recordIdStr = kcalEvent->customProperty("WILDPALMS", "RECORD_ID");
             if (!recordIdStr.isEmpty()) {
                 event.recordId = recordIdStr.toInt();
             }

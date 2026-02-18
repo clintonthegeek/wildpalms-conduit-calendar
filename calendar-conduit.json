@@ -3,18 +3,18 @@
         "Name": "Calendar Conduit",
         "Description": "Synchronizes Palm DatebookDB with iCalendar files",
         "Icon": "view-calendar",
-        "Authors": [{ "Name": "QPilotSync contributors" }],
+        "Authors": [{ "Name": "Clinton Ignatov" }],
         "License": "GPL",
         "Version": "1.0.0",
         "Category": "Sync"
     },
-    "X-QPilotSync-ConduitId": "calendar",
-    "X-QPilotSync-ConduitType": "sync",
-    "X-QPilotSync-PalmCreatorId": "date",
-    "X-QPilotSync-PalmDatabase": "DatebookDB",
-    "X-QPilotSync-RequiresDevice": true,
-    "X-QPilotSync-RunBefore": [],
-    "X-QPilotSync-RunAfter": ["webcalendar"],
-    "X-QPilotSync-DefaultEnabled": true,
-    "X-QPilotSync-SortOrder": 2
+    "X-WildPalms-ConduitId": "calendar",
+    "X-WildPalms-ConduitType": "sync",
+    "X-WildPalms-PalmCreatorId": "date",
+    "X-WildPalms-PalmDatabase": "DatebookDB",
+    "X-WildPalms-RequiresDevice": true,
+    "X-WildPalms-RunBefore": [],
+    "X-WildPalms-RunAfter": ["webcalendar"],
+    "X-WildPalms-DefaultEnabled": true,
+    "X-WildPalms-SortOrder": 2
 }
