@@ -3,8 +3,8 @@
 #include "calendarmapper.h"
 #include "palm/pilotrecord.h"
 #include "palm/categoryinfo.h"
-#include "palm/kpilotdevicelink.h"
 #include "sync/localfilebackend.h"
+#include "sync/qsynccore/conflictrecord.h"
 
 #include <QDebug>
 
@@ -15,54 +15,10 @@ CalendarConduit::CalendarConduit(QObject *parent)
 {
 }
 
-CalendarConduit::~CalendarConduit()
-{
-    delete m_categories;
-}
-
-void CalendarConduit::loadCategories(SyncContext *context)
-{
-    if (m_categories) {
-        delete m_categories;
-        m_categories = nullptr;
-    }
-    m_originalAppInfo.clear();
-
-    if (!context || !context->deviceLink || m_dbHandle < 0) {
-        return;
-    }
-
-    m_categories = new CategoryInfo();
-
-    unsigned char appInfoBuf[4096];
-    size_t appInfoSize = sizeof(appInfoBuf);
-
-    if (context->deviceLink->readAppBlock(m_dbHandle, appInfoBuf, &appInfoSize)) {
-        // Store original AppInfo block for later write-back
-        m_originalAppInfo = QByteArray(reinterpret_cast<const char*>(appInfoBuf), appInfoSize);
-
-        m_categories->parse(appInfoBuf, appInfoSize);
-        emit logMessage(QString("Loaded %1 categories").arg(m_categories->usedCategories().size()));
-    }
-}
-
-QString CalendarConduit::categoryName(int categoryIndex) const
-{
-    if (m_categories) {
-        return m_categories->categoryName(categoryIndex);
-    }
-    return QString();
-}
-
 BackendRecord* CalendarConduit::palmToBackend(PilotRecord *palmRecord,
                                                SyncContext *context)
 {
     if (!palmRecord) return nullptr;
-
-    // Ensure categories are loaded
-    if (!m_categories) {
-        loadCategories(context);
-    }
 
     // Unpack Palm event
     CalendarMapper::Event event = CalendarMapper::unpackEvent(palmRecord);
@@ -98,11 +54,6 @@ PilotRecord* CalendarConduit::backendToPalm(BackendRecord *backendRecord,
                                              SyncContext *context)
 {
     if (!backendRecord) return nullptr;
-
-    // Ensure categories are loaded
-    if (!m_categories) {
-        loadCategories(context);
-    }
 
     // Parse iCalendar content
     QString content = QString::fromUtf8(backendRecord->data);
@@ -177,58 +128,67 @@ QString CalendarConduit::palmRecordDescription(PilotRecord *record) const
     return desc;
 }
 
-bool CalendarConduit::writeModifiedCategories(SyncContext *context)
+void CalendarConduit::enrichConflictSnapshot(QSyncCore::RecordSnapshot &snapshot,
+                                               bool isSourceSide) const
 {
-    // Check if we have categories that were modified
-    if (!m_categories || !m_categories->isDirty()) {
-        return true;  // Nothing to write
-    }
+    if (snapshot.content.isEmpty()) return;
 
-    if (!context || !context->deviceLink || m_dbHandle < 0) {
-        emit logMessage("Warning: Cannot write categories - no device connection");
-        return false;
-    }
+    CalendarMapper::Event event;
 
-    emit logMessage("Writing modified categories back to Palm...");
-
-    size_t catSize = m_categories->packSize();
-
-    if (m_originalAppInfo.isEmpty()) {
-        // No original - just write categories
-        QByteArray buffer(catSize, 0);
-        int packed = m_categories->pack(reinterpret_cast<unsigned char*>(buffer.data()), buffer.size());
-        if (packed < 0) {
-            emit logMessage("Warning: Failed to pack categories");
-            return false;
-        }
-
-        if (!context->deviceLink->writeAppBlock(m_dbHandle,
-                reinterpret_cast<const unsigned char*>(buffer.constData()), packed)) {
-            emit logMessage("Warning: Failed to write categories to Palm");
-            return false;
-        }
+    if (isSourceSide) {
+        // Source: Palm binary — unpack via mapper, convert to iCal text
+        PilotRecord tempRecord(0, 0, 0, snapshot.content);
+        event = CalendarMapper::unpackEvent(&tempRecord);
+        QString catName = categoryName(event.category);
+        snapshot.content = CalendarMapper::eventToICal(event, catName).toUtf8();
     } else {
-        // We have original AppInfo - update category portion and preserve the rest
-        QByteArray buffer = m_originalAppInfo;
-
-        // Pack categories into the beginning of the buffer
-        int packed = m_categories->pack(reinterpret_cast<unsigned char*>(buffer.data()),
-                                         qMin(static_cast<size_t>(buffer.size()), catSize));
-        if (packed < 0) {
-            emit logMessage("Warning: Failed to pack categories");
-            return false;
-        }
-
-        if (!context->deviceLink->writeAppBlock(m_dbHandle,
-                reinterpret_cast<const unsigned char*>(buffer.constData()), buffer.size())) {
-            emit logMessage("Warning: Failed to write AppInfo block to Palm");
-            return false;
-        }
+        // Target: already iCal text — parse for metadata
+        event = CalendarMapper::iCalToEvent(QString::fromUtf8(snapshot.content));
     }
 
-    m_categories->clearDirty();
-    emit logMessage("Categories updated on Palm");
-    return true;
+    // Populate metadata
+    if (!event.description.isEmpty())
+        snapshot.metadata[QStringLiteral("summary")] = event.description;
+    if (event.begin.isValid())
+        snapshot.metadata[QStringLiteral("dtstart")] = event.begin.toString(QStringLiteral("yyyy-MM-dd hh:mm"));
+    if (event.end.isValid())
+        snapshot.metadata[QStringLiteral("dtend")] = event.end.toString(QStringLiteral("yyyy-MM-dd hh:mm"));
+    if (!event.note.isEmpty())
+        snapshot.metadata[QStringLiteral("description")] = event.note;
+    if (event.repeatType != CalendarMapper::RepeatNone)
+        snapshot.metadata[QStringLiteral("recurrence")] = QStringLiteral("Yes");
+    if (event.isUntimed)
+        snapshot.metadata[QStringLiteral("all_day")] = QStringLiteral("Yes");
+
+    snapshot.contentType = QStringLiteral("text/calendar");
+}
+
+QString CalendarConduit::formatConflictRecordHtml(const QSyncCore::RecordSnapshot &snapshot) const
+{
+    QString html;
+    const QVariantMap &m = snapshot.metadata;
+
+    QString summary = m.value(QStringLiteral("summary")).toString();
+    if (!summary.isEmpty())
+        html += QStringLiteral("<h3>%1</h3>").arg(summary.toHtmlEscaped());
+
+    html += QStringLiteral("<table cellpadding='4'>");
+
+    auto addRow = [&html](const QString &label, const QString &value) {
+        if (!value.isEmpty())
+            html += QStringLiteral("<tr><td><b>%1:</b></td><td>%2</td></tr>")
+                .arg(label.toHtmlEscaped(), value.toHtmlEscaped());
+    };
+
+    addRow(QStringLiteral("Start"), m.value(QStringLiteral("dtstart")).toString());
+    addRow(QStringLiteral("End"), m.value(QStringLiteral("dtend")).toString());
+    addRow(QStringLiteral("All Day"), m.value(QStringLiteral("all_day")).toString());
+    addRow(QStringLiteral("Recurrence"), m.value(QStringLiteral("recurrence")).toString());
+    addRow(QStringLiteral("Description"), m.value(QStringLiteral("description")).toString());
+
+    html += QStringLiteral("</table>");
+
+    return html;
 }
 
 QWidget *CalendarConduit::createView(QWidget *parent)

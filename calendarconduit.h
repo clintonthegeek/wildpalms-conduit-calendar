@@ -2,8 +2,6 @@
 #define CALENDARCONDUIT_H
 
 #include "sync/conduit.h"
-#include "palm/categoryinfo.h"
-#include <QByteArray>
 
 namespace Sync {
 
@@ -23,7 +21,6 @@ class CalendarConduit : public SyncConduitBase
 
 public:
     explicit CalendarConduit(QObject *parent = nullptr);
-    ~CalendarConduit() override;
 
     // ========== Conduit Identity ==========
 
@@ -58,19 +55,11 @@ public:
 
     QString palmRecordDescription(PilotRecord *record) const override;
 
-    QString categoryNameForIndex(int categoryIndex) const override {
-        return categoryName(categoryIndex);
-    }
+    // ========== Conflict Display ==========
 
-protected:
-    bool writeModifiedCategories(SyncContext *context) override;
-
-private:
-    CategoryInfo *m_categories = nullptr;
-    QByteArray m_originalAppInfo;  // Store original AppInfo block for write-back
-
-    void loadCategories(SyncContext *context);
-    QString categoryName(int categoryIndex) const;
+    void enrichConflictSnapshot(QSyncCore::RecordSnapshot &snapshot,
+                                 bool isSourceSide) const override;
+    QString formatConflictRecordHtml(const QSyncCore::RecordSnapshot &snapshot) const override;
 };
 
 } // namespace Sync
