@@ -11,7 +11,7 @@
     "X-WildPalms-ConduitId": "calendar",
     "X-WildPalms-ConduitType": "sync",
     "X-WildPalms-PalmCreatorId": "date",
-    "X-WildPalms-PalmDatabase": "DatebookDB",
+    "X-WildPalms-PalmDatabases": ["DatebookDB"],
     "X-WildPalms-RequiresDevice": true,
     "X-WildPalms-RunBefore": [],
     "X-WildPalms-RunAfter": ["webcalendar"],

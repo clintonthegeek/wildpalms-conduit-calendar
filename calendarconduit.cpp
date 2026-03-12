@@ -71,8 +71,10 @@ PilotRecord* CalendarConduit::backendToPalm(BackendRecord *backendRecord,
     return record;
 }
 
-bool CalendarConduit::recordsEqual(PilotRecord *palm, BackendRecord *backend) const
+bool CalendarConduit::recordsEqual(PilotRecord *palm, BackendRecord *backend,
+                                    const SyncContext *context) const
 {
+    Q_UNUSED(context);
     if (!palm || !backend) return false;
 
     // Unpack Palm event
@@ -109,8 +111,10 @@ bool CalendarConduit::recordsEqual(PilotRecord *palm, BackendRecord *backend) co
     return true;
 }
 
-QString CalendarConduit::palmRecordDescription(PilotRecord *record) const
+QString CalendarConduit::palmRecordDescription(PilotRecord *record,
+                                                const SyncContext *context) const
 {
+    Q_UNUSED(context);
     if (!record) return QString();
 
     CalendarMapper::Event event = CalendarMapper::unpackEvent(record);
