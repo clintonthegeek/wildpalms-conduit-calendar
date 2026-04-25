@@ -3,9 +3,9 @@
 #include "calendarblobbackend.h"
 #include "calendarconflicthandler.h"
 #include "calendarview.h"
-#include "categoryappinforeader.h"
 #include "icstranscoder.h"
 
+#include "palm/calendar/categoryappinforeader.h"
 #include "palm/calendar/categorymappingstore.h"
 #include "palm/calendar/palmcalendarbackend.h"
 #include "palm/conflict/palmbackendconfig.h"
@@ -73,9 +73,10 @@ CalendarBackendPlugin::createBackends(Kalburator::Sync::ISyncHost *host,
     if (palmBackend) {
         // Populate the category store from AppInfo. Failure is non-fatal:
         // the backend still surfaces palm:calendar/0 ("Unfiled").
-        populateFromAppInfo(*m_categoryStore,
-                            QStringLiteral("DatebookDB"),
-                            palmBackend->readAppBlock(QStringLiteral("DatebookDB")));
+        WildPalms::PalmCalendar::populateFromAppInfo(
+            *m_categoryStore,
+            QStringLiteral("DatebookDB"),
+            palmBackend->readAppBlock(QStringLiteral("DatebookDB")));
         out.blob = new CalendarBlobBackend(palmBackend, m_categoryStore.get());
     }
 

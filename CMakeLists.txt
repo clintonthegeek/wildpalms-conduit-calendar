@@ -6,7 +6,6 @@ if (WILDPALMS_CALENDAR_PLUGIN_V2)
             calendarbackendplugin.cpp   calendarbackendplugin.h
             calendarblobbackend.cpp     calendarblobbackend.h
             calendarconflicthandler.cpp calendarconflicthandler.h
-            categoryappinforeader.cpp   categoryappinforeader.h
             icstranscoder.cpp           icstranscoder.h
             calendarview.cpp            calendarview.h
         INSTALL_NAMESPACE "wildpalms/plugins"
