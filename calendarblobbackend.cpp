@@ -213,20 +213,22 @@ CalendarBlobBackend::modifiedSince(const QString &collectionId,
     return out;
 }
 
-QStringList CalendarBlobBackend::deletedSince(const QString &,
+QStringList CalendarBlobBackend::deletedSince(const QString & /*collectionId*/,
                                               const QDateTime &since)
 {
     if (!m_palmBackend) return {};
-    // PalmBackend's deletedSince already returns ids encoded for the
-    // "palm:datebook" collection — translate to ours by re-encoding.
-    QStringList out;
+    // KNOWN LIMITATION: returns deletions from ALL category slots, not
+    // just the requested collection. Per-slot filtering would require
+    // PalmBackend/IPalmDatabaseAccess to track each deletion's category
+    // at the time of removal — the record's category byte is lost when
+    // the record itself is. BlobSyncEngine tolerates extra ids (it
+    // ignores deletes for records it never saw on this collection),
+    // so the over-broad return is safe in practice. Tighten when
+    // PalmBackend grows a slot-aware deletedSince variant (post-E.15).
     const QString sourceCollection =
         WildPalms::PalmSync::PalmBackend::encodeCollectionId(
             QStringLiteral("DatebookDB"));
-    for (const auto &id : m_palmBackend->deletedSince(sourceCollection, since)) {
-        out.append(id);   // id encoding is collection-independent
-    }
-    return out;
+    return m_palmBackend->deletedSince(sourceCollection, since);
 }
 
 bool CalendarBlobBackend::supportsDeleteTracking() const
