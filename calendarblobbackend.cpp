@@ -9,12 +9,19 @@
 #include "backendrecord.h"
 #include "collectioninfo.h"
 
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QStringList>
 
 namespace WildPalms::CalendarPlugin {
 
 namespace {
+
+QString sha256Hex(const QByteArray &bytes)
+{
+    return QString::fromLatin1(
+        QCryptographicHash::hash(bytes, QCryptographicHash::Sha256).toHex());
+}
 
 QString idForPalmRecord(std::uint32_t recordId)
 {
@@ -110,6 +117,7 @@ QList<Kalburator::Sync::BackendRecord> CalendarBlobBackend::loadRecords(
         br.data         = ics;
         br.type         = QStringLiteral("text/calendar");
         br.lastModified = pr.lastModified;
+        br.contentHash  = sha256Hex(br.data);
         out.append(br);
     }
     return out;
@@ -131,6 +139,7 @@ CalendarBlobBackend::loadRecord(const QString &recordId)
     br.data         = ics;
     br.type         = QStringLiteral("text/calendar");
     br.lastModified = pr->lastModified;
+    br.contentHash  = sha256Hex(br.data);
     return br;
 }
 
@@ -208,6 +217,7 @@ CalendarBlobBackend::modifiedSince(const QString &collectionId,
         br.data         = ics;
         br.type         = QStringLiteral("text/calendar");
         br.lastModified = pr.lastModified;
+        br.contentHash  = sha256Hex(br.data);
         out.append(br);
     }
     return out;
