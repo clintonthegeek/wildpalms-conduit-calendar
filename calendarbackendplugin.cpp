@@ -19,8 +19,13 @@
 #include <KCalendarCore/MemoryCalendar>
 
 #include <QIcon>
+#include <QLoggingCategory>
 #include <QString>
 #include <QWidget>
+
+namespace {
+Q_LOGGING_CATEGORY(WP_CALENDAR_PLUGIN, "wildpalms.calendar.plugin")
+}
 
 namespace WildPalms::CalendarPlugin {
 
@@ -59,6 +64,9 @@ CalendarBackendPlugin::createBackends(Kalburator::Sync::ISyncHost *host,
     ProvidedBackends out;
     if (!device) return out;
 
+    // Cached for createConflictHandler. Re-entry overwrites: the
+    // IBackendPlugin contract is once-per-session per device, so a
+    // second call implies a new session and is intentional.
     m_device = device;
 
     auto *palmBackend = device->palmBackend();
@@ -81,7 +89,12 @@ CalendarBackendPlugin::createBackends(Kalburator::Sync::ISyncHost *host,
 Kalburator::Sync::QSyncCore::ConflictHandler *
 CalendarBackendPlugin::createConflictHandler()
 {
-    if (!m_device || !m_device->device()) return nullptr;
+    if (!m_device || !m_device->device()) {
+        qCWarning(WP_CALENDAR_PLUGIN)
+            << "createConflictHandler called before createBackends — "
+               "manager must invoke createBackends first to wire the device.";
+        return nullptr;
+    }
     return new CalendarConflictHandler(m_device->device(), m_palmConfig.get());
 }
 
