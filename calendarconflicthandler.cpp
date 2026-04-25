@@ -48,6 +48,9 @@ struct EventDiff {
     bool alarmsDiffer = false;
     bool exdatesDiffer = false;
     bool recurrenceShapeDiffers = false;
+    bool attendeesDiffer = false;
+    bool organizerDiffers = false;
+    bool categoriesDiffer = false;
 };
 
 EventDiff diffEvents(const KCalendarCore::Event::Ptr &a,
@@ -94,6 +97,23 @@ EventDiff diffEvents(const KCalendarCore::Event::Ptr &a,
         || ar->frequency() != br->frequency()
         || ar->duration() != br->duration();
 
+    auto sortedAttendeeEmails = [](const KCalendarCore::Event::Ptr &e) {
+        QStringList emails;
+        for (const auto &att : e->attendees()) emails.append(att.email());
+        std::sort(emails.begin(), emails.end());
+        return emails;
+    };
+    d.attendeesDiffer = sortedAttendeeEmails(a) != sortedAttendeeEmails(b);
+
+    d.organizerDiffers = a->organizer().email() != b->organizer().email();
+
+    auto sortedCategories = [](const KCalendarCore::Event::Ptr &e) {
+        QStringList cats = e->categories();
+        std::sort(cats.begin(), cats.end());
+        return cats;
+    };
+    d.categoriesDiffer = sortedCategories(a) != sortedCategories(b);
+
     return d;
 }
 
@@ -102,7 +122,8 @@ bool onlyAlarmsDiffer(const EventDiff &d)
     return d.alarmsDiffer
         && !d.summaryDiffers && !d.dtStartTimeDiffers && !d.dtStartTzDiffers
         && !d.dtEndDiffers && !d.descriptionDiffers && !d.locationDiffers
-        && !d.exdatesDiffer && !d.recurrenceShapeDiffers;
+        && !d.exdatesDiffer && !d.recurrenceShapeDiffers
+        && !d.attendeesDiffer && !d.organizerDiffers && !d.categoriesDiffer;
 }
 
 bool onlyExdatesDiffer(const EventDiff &d)
@@ -110,7 +131,8 @@ bool onlyExdatesDiffer(const EventDiff &d)
     return d.exdatesDiffer
         && !d.summaryDiffers && !d.dtStartTimeDiffers && !d.dtStartTzDiffers
         && !d.dtEndDiffers && !d.descriptionDiffers && !d.locationDiffers
-        && !d.alarmsDiffer && !d.recurrenceShapeDiffers;
+        && !d.alarmsDiffer && !d.recurrenceShapeDiffers
+        && !d.attendeesDiffer && !d.organizerDiffers && !d.categoriesDiffer;
 }
 
 bool onlyTzDiffers(const EventDiff &d)
@@ -118,7 +140,8 @@ bool onlyTzDiffers(const EventDiff &d)
     return d.dtStartTzDiffers
         && !d.dtStartTimeDiffers && !d.summaryDiffers && !d.dtEndDiffers
         && !d.descriptionDiffers && !d.locationDiffers
-        && !d.alarmsDiffer && !d.exdatesDiffer && !d.recurrenceShapeDiffers;
+        && !d.alarmsDiffer && !d.exdatesDiffer && !d.recurrenceShapeDiffers
+        && !d.attendeesDiffer && !d.organizerDiffers && !d.categoriesDiffer;
 }
 
 KCalendarCore::Event::Ptr mergeAlarms(const KCalendarCore::Event::Ptr &base,
