@@ -23,6 +23,7 @@ target_include_directories(wildpalms_calendar_v2 BEFORE
 target_link_libraries(wildpalms_calendar_v2
     PRIVATE
         WildPalmsCore
+        PalmDeviceAccessLib
         WildPalmsPalmSync
         WildPalmsPalmCalendar
         WildPalmsPalmCodecs

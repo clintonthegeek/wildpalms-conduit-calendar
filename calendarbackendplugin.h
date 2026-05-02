@@ -5,35 +5,38 @@
 
 #include <QObject>
 
-#include "core/ibackendplugin.h"
+#include "core/ibackendplugin_v2.h"
 
+namespace Kalburator::Sync::QSyncCore { struct RecordSnapshot; }
 namespace WildPalms::PalmCalendar { class CategoryMappingStore; }
 namespace WildPalms::PalmConflict { struct PalmBackendConfig; }
-class PalmDeviceConnection;
+namespace WildPalms::PalmSync { class PalmBackend; }
+namespace WildPalms::Runtime { class PalmDeviceAccess; }
 
 namespace WildPalms::CalendarPlugin {
 
 /**
- * @brief Second new-ABI WildPalms plugin (after Memo, E.9).
+ * @brief Calendar plugin migrated to IBackendPluginV2 (M2 Palm runtime rewrite).
  *
  * Provides:
- *   - CalendarBlobBackend wrapping the shared PalmBackend (one
- *     collection per populated category slot).
- *   - PalmCalendarBackend (typed SyncBackend, returned for future
- *     PlanStan routing + the unified-runtime calendar tab).
+ *   - CalendarBlobBackend wrapping a per-session PalmBackend (one
+ *     collection per populated category slot). Returned by
+ *     createPalmBackend(); PC-side backend is now chosen per-mapping
+ *     by the user, not by the plugin.
  *   - CalendarConflictHandler (calendar-aware overlays + Palm
  *     delegation).
  *
- * Owns the per-session CategoryMappingStore, populated from the
- * Datebook AppInfo block at createBackends() time.
+ * Owns the per-session CategoryMappingStore (populated from the
+ * Datebook AppInfo block at createPalmBackend() time) and the
+ * per-session PalmBackend adapter.
  *
  * Surfaces CalendarView as a main-window tab (reused unchanged from
  * the legacy CalendarConduit).
  */
-class CalendarBackendPlugin : public QObject, public WildPalms::IBackendPlugin
+class CalendarBackendPlugin : public QObject, public WildPalms::IBackendPluginV2
 {
     Q_OBJECT
-    Q_INTERFACES(WildPalms::IBackendPlugin)
+    Q_INTERFACES(WildPalms::IBackendPluginV2)
 public:
     explicit CalendarBackendPlugin(QObject *parent = nullptr);
     ~CalendarBackendPlugin() override;
@@ -45,31 +48,32 @@ public:
     QString description() const override;
     QString version()     const override;
 
-    // IBackendPlugin
-    QStringList      claimedDatabases() const override;
-    ProvidedBackends createBackends(Kalburator::Sync::ISyncHost *host,
-                                    PalmDeviceConnection         *device) override;
+    // IBackendPluginV2
+    QStringList claimedDatabases() const override;
+    std::unique_ptr<Kalburator::Sync::IBlobBackend>
+        createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device) override;
 
-    // IBackendPlugin — conflict handler
+    // IBackendPluginV2 — conflict handler
     Kalburator::Sync::QSyncCore::ConflictHandler *createConflictHandler() override;
 
-    // IBackendPlugin — main view
+    // IBackendPluginV2 — main view
     bool     hasMainView()   const override;
     QWidget *createMainView(QWidget *parent) const override;
     QString  mainViewName()  const override;
     QIcon    mainViewIcon()  const override;
 
-    // IBackendPlugin — conflict presentation
+    // Conflict presentation (called by conflict UI layer)
     void    enrichConflictSnapshot(
         Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot,
-        bool isSourceSide) const override;
+        bool isSourceSide) const;
     QString formatConflictRecordHtml(
-        const Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot) const override;
+        const Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot) const;
 
 private:
     std::unique_ptr<WildPalms::PalmCalendar::CategoryMappingStore> m_categoryStore;
     std::unique_ptr<WildPalms::PalmConflict::PalmBackendConfig>    m_palmConfig;
-    PalmDeviceConnection *m_device = nullptr;   // borrowed; cached for createConflictHandler
+    std::unique_ptr<WildPalms::PalmSync::PalmBackend>              m_palmBackend;
+    WildPalms::Runtime::PalmDeviceAccess *m_device = nullptr;   // borrowed; cached for createConflictHandler
 };
 
 } // namespace WildPalms::CalendarPlugin

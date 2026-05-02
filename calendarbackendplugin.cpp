@@ -3,14 +3,12 @@
 #include "calendarblobbackend.h"
 #include "calendarconflicthandler.h"
 #include "calendarview.h"
-#include "icstranscoder.h"
 
 #include "palm/calendar/categoryappinforeader.h"
 #include "palm/calendar/categorymappingstore.h"
-#include "palm/calendar/palmcalendarbackend.h"
 #include "palm/conflict/palmbackendconfig.h"
-#include "palm/palmdeviceconnection.h"
 #include "palm/sync/palmbackend.h"
+#include "runtime/palmdeviceaccess.h"
 
 #include "conflictrecord.h"
 
@@ -56,47 +54,42 @@ QStringList CalendarBackendPlugin::claimedDatabases() const
     return { QStringLiteral("DatebookDB") };
 }
 
-WildPalms::IBackendPlugin::ProvidedBackends
-CalendarBackendPlugin::createBackends(Kalburator::Sync::ISyncHost *host,
-                                      PalmDeviceConnection         *device)
+std::unique_ptr<Kalburator::Sync::IBlobBackend>
+CalendarBackendPlugin::createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device)
 {
-    Q_UNUSED(host)
-    ProvidedBackends out;
-    if (!device) return out;
+    if (!device) return nullptr;
 
     // Cached for createConflictHandler. Re-entry overwrites: the
-    // IBackendPlugin contract is once-per-session per device, so a
+    // IBackendPluginV2 contract is once-per-session per device, so a
     // second call implies a new session and is intentional.
     m_device = device;
 
-    auto *palmBackend = device->palmBackend();
-    if (palmBackend) {
-        // Populate the category store from AppInfo. Failure is non-fatal:
-        // the backend still surfaces palm:calendar/0 ("Unfiled").
-        WildPalms::PalmCalendar::populateFromAppInfo(
-            *m_categoryStore,
-            QStringLiteral("DatebookDB"),
-            palmBackend->readAppBlock(QStringLiteral("DatebookDB")));
-        out.blob = new CalendarBlobBackend(palmBackend, m_categoryStore.get());
-    }
+    // Build a PalmBackend adapter over the device. PalmDeviceAccess IS-A
+    // IPalmDatabaseAccess, so no cast needed. The plugin owns this backend
+    // for the duration of the session.
+    m_palmBackend = std::make_unique<WildPalms::PalmSync::PalmBackend>(device);
 
-    if (device->device()) {
-        out.calendar = new WildPalms::PalmCalendar::PalmCalendarBackend(
-            device->device(), m_categoryStore.get());
-    }
-    return out;
+    // Populate the category store from AppInfo. Failure is non-fatal:
+    // the backend still surfaces palm:calendar/0 ("Unfiled").
+    WildPalms::PalmCalendar::populateFromAppInfo(
+        *m_categoryStore,
+        QStringLiteral("DatebookDB"),
+        m_palmBackend->readAppBlock(QStringLiteral("DatebookDB")));
+
+    return std::make_unique<CalendarBlobBackend>(m_palmBackend.get(), m_categoryStore.get());
 }
 
 Kalburator::Sync::QSyncCore::ConflictHandler *
 CalendarBackendPlugin::createConflictHandler()
 {
-    if (!m_device || !m_device->device()) {
+    if (!m_device) {
         qCWarning(WP_CALENDAR_PLUGIN)
-            << "createConflictHandler called before createBackends — "
-               "manager must invoke createBackends first to wire the device.";
+            << "createConflictHandler called before createPalmBackend — "
+               "runtime must invoke createPalmBackend first to wire the device.";
         return nullptr;
     }
-    return new CalendarConflictHandler(m_device->device(), m_palmConfig.get());
+    // PalmDeviceAccess IS-A IPalmDatabaseAccess; no cast needed.
+    return new CalendarConflictHandler(m_device, m_palmConfig.get());
 }
 
 bool CalendarBackendPlugin::hasMainView() const { return true; }
