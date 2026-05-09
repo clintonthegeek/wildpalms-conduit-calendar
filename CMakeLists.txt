@@ -2,6 +2,7 @@ kcoreaddons_add_plugin(wildpalms_calendar_v2
     SOURCES
         calendarbackendplugin.cpp   calendarbackendplugin.h
         calendarblobbackend.cpp     calendarblobbackend.h
+        palmcalendarbackend.cpp     palmcalendarbackend.h
         calendarconflicthandler.cpp calendarconflicthandler.h
         icstranscoder.cpp           icstranscoder.h
         calendarview.cpp            calendarview.h
