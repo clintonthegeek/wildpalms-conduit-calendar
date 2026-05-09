@@ -1,6 +1,6 @@
 #include "calendarbackendplugin.h"
 
-#include "calendarblobbackend.h"
+#include "palmcalendarbackend.h"
 #include "calendarconflicthandler.h"
 #include "calendarview.h"
 
@@ -76,7 +76,7 @@ CalendarBackendPlugin::createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *d
         QStringLiteral("DatebookDB"),
         m_palmBackend->readAppBlock(QStringLiteral("DatebookDB")));
 
-    return std::make_unique<CalendarBlobBackend>(m_palmBackend.get(), m_categoryStore.get());
+    return std::make_unique<PalmCalendarBackend>(m_palmBackend.get(), m_categoryStore.get());
 }
 
 Kalburator::Sync::QSyncCore::ConflictHandler *
