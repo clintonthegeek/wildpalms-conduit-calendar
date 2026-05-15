@@ -19,11 +19,16 @@ target_include_directories(wildpalms_calendar_static BEFORE
     PRIVATE
         $<TARGET_PROPERTY:Kalburator::Sync,INTERFACE_INCLUDE_DIRECTORIES>
 )
+set_target_properties(wildpalms_calendar_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(wildpalms_calendar_static
     PUBLIC
         Kalburator::Sync
     PRIVATE
-        WildPalmsCore
+        # K.8b T6: WildPalmsCore removed to break CMake autogen cycle
+        # (WildPalmsCore→plugin_static→WildPalmsCore). Symbols resolved
+        # when this static is pulled into WildPalmsCore.so at its link step.
+        # Include path (${CMAKE_SOURCE_DIR}/src above) covers all headers.
         PalmDeviceAccessLib
         WildPalmsPalmSync
         WildPalmsPalmCalendar
