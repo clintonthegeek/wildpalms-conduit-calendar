@@ -37,16 +37,16 @@ namespace WildPalms::CalendarPlugin {
  * PalmConflictHandler which also borrows). Both must outlive this
  * handler.
  */
-class CalendarConflictHandler : public Kalburator::Sync::QSyncCore::ConflictHandler
+class CalendarConflictHandler : public Kalburator::Conflict::ConflictHandler
 {
 public:
     CalendarConflictHandler(WildPalms::PalmSync::IPalmDatabaseAccess *device,
                             const WildPalms::PalmConflict::PalmBackendConfig *config);
     ~CalendarConflictHandler() override;
 
-    Kalburator::Sync::QSyncCore::ConflictDecision handleConflict(
-        Kalburator::Sync::QSyncCore::ConflictRecord &conflict,
-        const Kalburator::Sync::QSyncCore::ConflictPolicy &policy) override;
+    Kalburator::Conflict::ConflictDecision handleConflict(
+        Kalburator::Conflict::ConflictRecord &conflict,
+        const Kalburator::Conflict::ConflictPolicy &policy) override;
 
     bool canPrompt() const override { return false; }
 

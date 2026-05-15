@@ -197,10 +197,10 @@ CalendarConflictHandler::CalendarConflictHandler(
 
 CalendarConflictHandler::~CalendarConflictHandler() = default;
 
-Kalburator::Sync::QSyncCore::ConflictDecision
+Kalburator::Conflict::ConflictDecision
 CalendarConflictHandler::handleConflict(
-    Kalburator::Sync::QSyncCore::ConflictRecord &conflict,
-    const Kalburator::Sync::QSyncCore::ConflictPolicy &policy)
+    Kalburator::Conflict::ConflictRecord &conflict,
+    const Kalburator::Conflict::ConflictPolicy &policy)
 {
     auto src = decodeFirstEvent(conflict.source.content);
     auto tgt = decodeFirstEvent(conflict.target.content);
@@ -215,19 +215,19 @@ CalendarConflictHandler::handleConflict(
         auto merged = mergeAlarms(src, tgt);
         conflict.mergedContent = serialiseEvent(merged);
         m_lastOverlay = QStringLiteral("alarm");
-        return Kalburator::Sync::QSyncCore::ConflictDecision::Merge;
+        return Kalburator::Conflict::ConflictDecision::Merge;
     }
     if (onlyExdatesDiffer(d)) {
         auto merged = mergeExdates(src, tgt);
         conflict.mergedContent = serialiseEvent(merged);
         m_lastOverlay = QStringLiteral("exdate");
-        return Kalburator::Sync::QSyncCore::ConflictDecision::Merge;
+        return Kalburator::Conflict::ConflictDecision::Merge;
     }
     if (onlyTzDiffers(d)) {
         auto chosen = pickFloatingSide(src, tgt);
         conflict.mergedContent = serialiseEvent(chosen);
         m_lastOverlay = QStringLiteral("tz");
-        return Kalburator::Sync::QSyncCore::ConflictDecision::Merge;
+        return Kalburator::Conflict::ConflictDecision::Merge;
     }
 
     m_lastOverlay = QStringLiteral("delegated");

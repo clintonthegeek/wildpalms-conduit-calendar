@@ -27,16 +27,14 @@ Q_LOGGING_CATEGORY(WP_CALENDAR_PLUGIN, "wildpalms.calendar.plugin")
 
 namespace WildPalms::CalendarPlugin {
 
-CalendarBackendPlugin::CalendarBackendPlugin(QObject *parent)
-    : QObject(parent)
-    , m_categoryStore(std::make_unique<WildPalms::PalmCalendar::CategoryMappingStore>())
+CalendarBackendPlugin::CalendarBackendPlugin()
+    : m_categoryStore(std::make_unique<WildPalms::PalmCalendar::CategoryMappingStore>())
     , m_palmConfig(std::make_unique<WildPalms::PalmConflict::PalmBackendConfig>())
 {
 }
 
 CalendarBackendPlugin::~CalendarBackendPlugin() = default;
 
-QString CalendarBackendPlugin::pluginId()    const { return QStringLiteral("calendar"); }
 QString CalendarBackendPlugin::displayName() const { return QStringLiteral("Calendar"); }
 QIcon   CalendarBackendPlugin::icon()        const
 {
@@ -49,18 +47,13 @@ QString CalendarBackendPlugin::description() const
 }
 QString CalendarBackendPlugin::version()     const { return QStringLiteral("2.0"); }
 
-QStringList CalendarBackendPlugin::claimedDatabases() const
-{
-    return { QStringLiteral("DatebookDB") };
-}
-
-std::unique_ptr<Kalburator::Sync::IBlobBackend>
+std::unique_ptr<Kalburator::Sync::SyncBackend>
 CalendarBackendPlugin::createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device)
 {
     if (!device) return nullptr;
 
     // Cached for createConflictHandler. Re-entry overwrites: the
-    // IBackendPluginV2 contract is once-per-session per device, so a
+    // plugin contract is once-per-session per device, so a
     // second call implies a new session and is intentional.
     m_device = device;
 
@@ -79,7 +72,7 @@ CalendarBackendPlugin::createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *d
     return std::make_unique<PalmCalendarBackend>(m_palmBackend.get(), m_categoryStore.get());
 }
 
-Kalburator::Sync::QSyncCore::ConflictHandler *
+Kalburator::Conflict::ConflictHandler *
 CalendarBackendPlugin::createConflictHandler()
 {
     if (!m_device) {
@@ -107,7 +100,7 @@ QIcon CalendarBackendPlugin::mainViewIcon() const
 }
 
 void CalendarBackendPlugin::enrichConflictSnapshot(
-    Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot,
+    Kalburator::Conflict::RecordSnapshot &snapshot,
     bool /*isSourceSide*/) const
 {
     if (snapshot.content.isEmpty()) return;
@@ -127,7 +120,7 @@ void CalendarBackendPlugin::enrichConflictSnapshot(
 }
 
 QString CalendarBackendPlugin::formatConflictRecordHtml(
-    const Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot) const
+    const Kalburator::Conflict::RecordSnapshot &snapshot) const
 {
     QString html;
     const QString title   = snapshot.metadata.value(QStringLiteral("title")).toString();
@@ -144,11 +137,3 @@ QString CalendarBackendPlugin::formatConflictRecordHtml(
 }
 
 } // namespace WildPalms::CalendarPlugin
-
-#include <KPluginFactory>
-
-K_PLUGIN_FACTORY_WITH_JSON(CalendarBackendPluginFactory,
-                           "calendar-backend-plugin.json",
-                           registerPlugin<WildPalms::CalendarPlugin::CalendarBackendPlugin>();)
-
-#include "calendarbackendplugin.moc"

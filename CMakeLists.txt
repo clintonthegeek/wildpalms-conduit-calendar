@@ -1,13 +1,12 @@
-kcoreaddons_add_plugin(wildpalms_calendar_v2
-    SOURCES
-        calendarbackendplugin.cpp   calendarbackendplugin.h
-        palmcalendarbackend.cpp     palmcalendarbackend.h
-        calendarconflicthandler.cpp calendarconflicthandler.h
-        icstranscoder.cpp           icstranscoder.h
-        calendarview.cpp            calendarview.h
-    INSTALL_NAMESPACE "wildpalms/plugins"
+add_library(wildpalms_calendar_static STATIC
+    calendarbackendplugin.cpp   calendarbackendplugin.h
+    palmcalendarbackend.cpp     palmcalendarbackend.h
+    calendarconflicthandler.cpp calendarconflicthandler.h
+    icstranscoder.cpp           icstranscoder.h
+    calendarview.cpp            calendarview.h
 )
-target_include_directories(wildpalms_calendar_v2
+
+target_include_directories(wildpalms_calendar_static
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src
 )
@@ -16,11 +15,13 @@ target_include_directories(wildpalms_calendar_v2
 # WildPalms ::Sync::SyncBackend exposed by WildPalmsCore's PUBLIC
 # src/sync include. Required because palmcalendarbackend.h includes
 # "syncbackend.h" unqualified.
-target_include_directories(wildpalms_calendar_v2 BEFORE
+target_include_directories(wildpalms_calendar_static BEFORE
     PRIVATE
         $<TARGET_PROPERTY:Kalburator::Sync,INTERFACE_INCLUDE_DIRECTORIES>
 )
-target_link_libraries(wildpalms_calendar_v2
+target_link_libraries(wildpalms_calendar_static
+    PUBLIC
+        Kalburator::Sync
     PRIVATE
         WildPalmsCore
         PalmDeviceAccessLib
@@ -28,10 +29,8 @@ target_link_libraries(wildpalms_calendar_v2
         WildPalmsPalmCalendar
         WildPalmsPalmCodecs
         WildPalmsPalmConflict
-        KF6::CoreAddons
         KF6::CalendarCore
         KF6::I18n
         KF6::WidgetsAddons
         Qt::Widgets
-        Kalburator::Sync
 )
