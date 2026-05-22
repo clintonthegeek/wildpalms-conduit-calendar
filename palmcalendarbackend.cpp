@@ -189,7 +189,10 @@ bool PalmCalendarBackend::updateRecord(
 
 bool PalmCalendarBackend::deleteRecord(const QString &recordId)
 {
-    return m_palmBackend && m_palmBackend->deleteRecord(recordId);
+    if (!m_palmBackend) return false;
+    std::uint32_t rid = 0;
+    if (!decodeId(recordId, &rid)) return false;
+    return m_palmBackend->deletePalmRecord(QStringLiteral("DatebookDB"), rid);
 }
 
 QList<Kalburator::Sync::BackendRecord>
