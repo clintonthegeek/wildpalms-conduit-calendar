@@ -129,18 +129,27 @@ void CalendarView::loadEvents()
         return;
     }
 
-    QString calendarPath = m_syncPath + QStringLiteral("/calendar");
-    QDir calendarDir(calendarPath);
-
-    if (!calendarDir.exists()) {
+    // Aggregate-read across all per-Palm-collection subdirs under
+    // <sync>/rawfiles/calendar/<col>/ (PalmRuntime writes one dir per
+    // Palm slot — palm_calendar_0, palm_calendar_1, ...).
+    QDir rawfilesDir(m_syncPath + QStringLiteral("/rawfiles/calendar"));
+    if (!rawfilesDir.exists()) {
         m_eventList->addItem(i18n("No calendar data found"));
         return;
     }
-
-    // Load all .ics files from calendar directory
     QStringList filters;
     filters << QStringLiteral("*.ics");
-    QFileInfoList files = calendarDir.entryInfoList(filters, QDir::Files, QDir::Name);
+    QFileInfoList files;
+    const QFileInfoList colDirs = rawfilesDir.entryInfoList(
+        QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    for (const QFileInfo &col : colDirs) {
+        files.append(QDir(col.filePath()).entryInfoList(
+            filters, QDir::Files, QDir::Name));
+    }
+    if (files.isEmpty()) {
+        m_eventList->addItem(i18n("No calendar data found"));
+        return;
+    }
 
     KCalendarCore::ICalFormat format;
 
