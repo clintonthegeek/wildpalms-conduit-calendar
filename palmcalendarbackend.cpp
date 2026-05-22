@@ -10,19 +10,12 @@
 #include "collectioninfo.h"
 #include "shape.h"
 
-#include <QCryptographicHash>
 #include <QDateTime>
 #include <QStringList>
 
 namespace WildPalms::CalendarPlugin {
 
 namespace {
-
-QString sha256Hex(const QByteArray &bytes)
-{
-    return QString::fromLatin1(
-        QCryptographicHash::hash(bytes, QCryptographicHash::Sha256).toHex());
-}
 
 QString idForPalmRecord(std::uint32_t recordId)
 {
@@ -122,7 +115,7 @@ QList<Kalburator::Sync::BackendRecord> PalmCalendarBackend::loadRecords(
         br.data         = ics;
         br.type         = QStringLiteral("text/calendar");
         br.lastModified = pr.lastModified;
-        br.contentHash  = sha256Hex(br.data);
+        br.contentHash  = pr.contentHash();
         out.append(br);
     }
     return out;
@@ -144,7 +137,7 @@ PalmCalendarBackend::loadRecord(const QString &recordId)
     br.data         = ics;
     br.type         = QStringLiteral("text/calendar");
     br.lastModified = pr->lastModified;
-    br.contentHash  = sha256Hex(br.data);
+    br.contentHash  = pr->contentHash();
     return br;
 }
 
@@ -219,7 +212,7 @@ PalmCalendarBackend::modifiedSince(const QString &collectionId,
         br.data         = ics;
         br.type         = QStringLiteral("text/calendar");
         br.lastModified = pr.lastModified;
-        br.contentHash  = sha256Hex(br.data);
+        br.contentHash  = pr.contentHash();
         out.append(br);
     }
     return out;
