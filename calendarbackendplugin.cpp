@@ -136,4 +136,10 @@ QString CalendarBackendPlugin::formatConflictRecordHtml(
     return html;
 }
 
+QStringList CalendarBackendPlugin::categorySlotNames() const
+{
+    if (!m_categoryStore) return {};
+    return m_categoryStore->sixteenSlotNames(primaryDbName());
+}
+
 } // namespace WildPalms::CalendarPlugin
