@@ -64,13 +64,11 @@ public:
                    KCalendarCore::MemoryCalendar *,
                    const QList<KCalendarCore::Incidence::Ptr> &,
                    const QList<KCalendarCore::Incidence::Ptr> &,
-                   const QMap<QString, QString> &,
-                   const Kalburator::Sync::TranscodingPlan &) override {}
+                   const QMap<QString, QString> &) override {}
     void removeItem(const QString &, const QString &) override {}
     Kalburator::Sync::PushOperation *pushItems(
         const QString &,
-        const QList<KCalendarCore::Incidence::Ptr> &,
-        const Kalburator::Sync::TranscodingPlan &) override { return nullptr; }
+        const QList<KCalendarCore::Incidence::Ptr> &) override { return nullptr; }
 
 Q_SIGNALS:
     void recordCreated(const QString &recordId);
