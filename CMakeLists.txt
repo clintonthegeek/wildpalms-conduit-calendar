@@ -1,9 +1,11 @@
 add_library(wildpalms_calendar_static STATIC
-    calendarbackendplugin.cpp   calendarbackendplugin.h
-    palmcalendarbackend.cpp     palmcalendarbackend.h
-    calendarconflicthandler.cpp calendarconflicthandler.h
-    icstranscoder.cpp           icstranscoder.h
-    calendarview.cpp            calendarview.h
+    calendarbackendplugin.cpp      calendarbackendplugin.h
+    palmcalendarbackend.cpp        palmcalendarbackend.h
+    calendarconflicthandler.cpp    calendarconflicthandler.h
+    icstranscoder.cpp              icstranscoder.h
+    palmtoicstransformation.cpp    palmtoicstransformation.h
+    calendardomainextension.cpp    calendardomainextension.h
+    calendarview.cpp               calendarview.h
 )
 
 target_include_directories(wildpalms_calendar_static

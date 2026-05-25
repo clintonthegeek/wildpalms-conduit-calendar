@@ -2,6 +2,7 @@
 
 #include "palmcalendarbackend.h"
 #include "calendarconflicthandler.h"
+#include "calendardomainextension.h"
 #include "calendarview.h"
 
 #include "palm/calendar/categoryappinforeader.h"
@@ -11,6 +12,7 @@
 #include "runtime/palmdeviceaccess.h"
 
 #include "conflictrecord.h"
+#include "transformationregistry.h"
 
 #include <KCalendarCore/Event>
 #include <KCalendarCore/ICalFormat>
@@ -31,6 +33,11 @@ CalendarBackendPlugin::CalendarBackendPlugin()
     : m_categoryStore(std::make_unique<WildPalms::PalmCalendar::CategoryMappingStore>())
     , m_palmConfig(std::make_unique<WildPalms::PalmConflict::PalmBackendConfig>())
 {
+    // Phase 3: register the (calendar, palm) peer shape and palm<->ical edges
+    // with the process-wide TransformationRegistry at plugin construction
+    // (mirrors ContactsBackendPlugin). Idempotent across instances.
+    CalendarDomainExtension::registerWith(
+        Kalburator::Shape::TransformationRegistry::instance());
 }
 
 CalendarBackendPlugin::~CalendarBackendPlugin() = default;
