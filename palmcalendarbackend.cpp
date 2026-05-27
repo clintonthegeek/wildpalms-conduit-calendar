@@ -59,6 +59,13 @@ QList<Kalburator::Sync::CollectionInfo> PalmCalendarBackend::availableCollection
 {
     QList<Kalburator::Sync::CollectionInfo> out;
 
+    // Domain-level collection: returns all records regardless of category slot.
+    Kalburator::Sync::CollectionInfo domain;
+    domain.id   = QStringLiteral("palm:calendar");
+    domain.name = QStringLiteral("Calendar");
+    domain.type = QStringLiteral("calendar");
+    out.append(domain);
+
     Kalburator::Sync::CollectionInfo unfiled;
     unfiled.id   = collectionIdForSlot(0);
     unfiled.name = QStringLiteral("Unfiled");
@@ -98,8 +105,24 @@ QString PalmCalendarBackend::createCollection(
 QList<Kalburator::Sync::BackendRecord> PalmCalendarBackend::loadRecords(
     const QString &collectionId)
 {
-    const int slot = slotFromCollectionId(collectionId);
     QList<Kalburator::Sync::BackendRecord> out;
+
+    // Domain-level collection: return ALL records unfiltered.
+    if (collectionId == QStringLiteral("palm:calendar")) {
+        if (!m_palmBackend) return out;
+        for (const auto &pr : m_palmBackend->loadPalmRecords(QStringLiteral("DatebookDB"))) {
+            Kalburator::Sync::BackendRecord br;
+            br.id           = idForPalmRecord(pr.recordId);
+            br.data         = pr.toWireBytes();
+            br.type         = QStringLiteral("calendar");
+            br.lastModified = pr.lastModified;
+            br.contentHash  = pr.contentHash();
+            out.append(br);
+        }
+        return out;
+    }
+
+    const int slot = slotFromCollectionId(collectionId);
     if (slot < 0 || !m_palmBackend) return out;
 
     const auto records = m_palmBackend->loadPalmRecords(QStringLiteral("DatebookDB"));
@@ -138,9 +161,21 @@ QString PalmCalendarBackend::createRecord(
     const QString &collectionId,
     const Kalburator::Sync::BackendRecord &record)
 {
-    const int slot = slotFromCollectionId(collectionId);
-    if (slot < 0 || !m_palmBackend) return {};
+    if (!m_palmBackend) return {};
     if (record.data.isEmpty()) return {};
+    // For the domain-level collection, slot comes from the record's wire bytes.
+    if (collectionId == QStringLiteral("palm:calendar")) {
+        auto pr = WildPalms::PalmSync::PalmRecord::fromWireBytes(record.data);
+        pr.lastModified = record.lastModified.isValid()
+            ? record.lastModified
+            : QDateTime::currentDateTimeUtc();
+        const auto newId = m_palmBackend->createPalmRecord(
+            QStringLiteral("DatebookDB"), pr);
+        if (newId == 0) return {};
+        return idForPalmRecord(newId);
+    }
+    const int slot = slotFromCollectionId(collectionId);
+    if (slot < 0) return {};
 
     auto pr = WildPalms::PalmSync::PalmRecord::fromWireBytes(record.data);
     pr.category     = static_cast<std::uint8_t>(slot);
