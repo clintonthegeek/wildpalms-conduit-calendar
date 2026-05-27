@@ -36,10 +36,16 @@ public:
     CalendarBackendPlugin();
     ~CalendarBackendPlugin() override;
 
-    // Kalburator::Plugin — all return {} (Palm plugins don't contribute
-    // to the libkalburator BackendContribution system)
+    // Kalburator::Plugin — no backend contributions (Palm backends are created
+    // directly by PalmRuntime, not via the BackendContribution system).
     QList<std::shared_ptr<Kalburator::Sync::BackendContribution>>
         backendContributions() const override { return {}; }
+
+    // O7: contribute the (calendar, palm) peer shape + palm<->ical edges via
+    // the shape-graph contribution system (PluginManager registers them into
+    // the injected ShapeRegistries). Replaces the old ctor-time registerWith().
+    QList<std::shared_ptr<Kalburator::Shape::ShapeContribution>>
+        shapeContributions() const override;
 
     // Plugin identity
     QString     pluginId()         const { return QStringLiteral("calendar"); }

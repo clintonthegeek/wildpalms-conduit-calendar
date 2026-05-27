@@ -1,15 +1,19 @@
 #ifndef WILDPALMS_CALENDAR_CALENDARDOMAINEXTENSION_H
 #define WILDPALMS_CALENDAR_CALENDARDOMAINEXTENSION_H
 
-namespace Kalburator::Shape { class TransformationRegistry; }
+#include <shapecontribution.h>
 
 namespace WildPalms::CalendarPlugin {
 
-// Registers the (calendar, palm) peer shape and palm<->ical edges with the
+// O7: contributes the (calendar, palm) peer shape and palm<->ical edges to the
 // shape graph. The ical<->canon hop is libkalburator's (CalendarStockShapes).
-class CalendarDomainExtension {
+// PluginManager registers this into the injected ShapeRegistries.
+class CalendarPalmShapes : public Kalburator::Shape::ShapeContribution {
 public:
-    static void registerWith(Kalburator::Shape::TransformationRegistry &registry);
+    Kalburator::Shape::DomainId targetDomain() const override;
+    QList<std::pair<Kalburator::Shape::Shape, Kalburator::Shape::PropertyCatalogue>>
+        peerShapes() const override;
+    QList<Kalburator::Shape::TransformationEdge> edges() const override;
 };
 
 } // namespace WildPalms::CalendarPlugin

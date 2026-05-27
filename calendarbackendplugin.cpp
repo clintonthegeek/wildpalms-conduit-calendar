@@ -12,7 +12,6 @@
 #include "runtime/palmdeviceaccess.h"
 
 #include "conflictrecord.h"
-#include "transformationregistry.h"
 
 #include <KCalendarCore/Event>
 #include <KCalendarCore/ICalFormat>
@@ -33,14 +32,17 @@ CalendarBackendPlugin::CalendarBackendPlugin()
     : m_categoryStore(std::make_unique<WildPalms::PalmCalendar::CategoryMappingStore>())
     , m_palmConfig(std::make_unique<WildPalms::PalmConflict::PalmBackendConfig>())
 {
-    // Phase 3: register the (calendar, palm) peer shape and palm<->ical edges
-    // with the process-wide TransformationRegistry at plugin construction
-    // (mirrors ContactsBackendPlugin). Idempotent across instances.
-    CalendarDomainExtension::registerWith(
-        Kalburator::Shape::TransformationRegistry::instance());
+    // O7: shape registration moved out of the ctor into shapeContributions();
+    // PluginManager registers the contribution into the injected ShapeRegistries.
 }
 
 CalendarBackendPlugin::~CalendarBackendPlugin() = default;
+
+QList<std::shared_ptr<Kalburator::Shape::ShapeContribution>>
+CalendarBackendPlugin::shapeContributions() const
+{
+    return { std::make_shared<CalendarPalmShapes>() };
+}
 
 QString CalendarBackendPlugin::displayName() const { return QStringLiteral("Calendar"); }
 QIcon   CalendarBackendPlugin::icon()        const
