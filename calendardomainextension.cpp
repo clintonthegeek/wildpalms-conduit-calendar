@@ -27,6 +27,12 @@ PropertyCatalogue makePalmCatalogue()
 
 } // namespace
 
+CalendarPalmShapes::CalendarPalmShapes(
+    const WildPalms::PalmCalendar::CategoryMappingStore *cats)
+    : m_cats(cats)
+{
+}
+
 DomainId CalendarPalmShapes::targetDomain() const
 {
     return DomainId{QStringLiteral("calendar")};
@@ -47,8 +53,8 @@ QList<TransformationEdge> CalendarPalmShapes::edges() const
     // The ical endpoint is registered by libkalburator's CalendarStockShapes,
     // which loads earlier in the same PluginManager batch.
     return {
-        TransformationEdge{ palm, ical, palmToIcsLoss(), std::make_shared<PalmToIcsStage>() },
-        TransformationEdge{ ical, palm, icsToPalmLoss(), std::make_shared<IcsToPalmStage>() },
+        TransformationEdge{ palm, ical, palmToIcsLoss(), std::make_shared<PalmToIcsStage>(m_cats) },
+        TransformationEdge{ ical, palm, icsToPalmLoss(), std::make_shared<IcsToPalmStage>(m_cats) },
     };
 }
 

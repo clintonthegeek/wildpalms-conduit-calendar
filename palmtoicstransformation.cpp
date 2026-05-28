@@ -7,22 +7,30 @@ using namespace Kalburator::Shape;
 
 namespace WildPalms::CalendarPlugin {
 
+PalmToIcsStage::PalmToIcsStage(const WildPalms::PalmCalendar::CategoryMappingStore *cats)
+    : m_cats(cats)
+{
+}
+
 QByteArray PalmToIcsStage::transform(const QByteArray &sourceBytes) const
 {
     if (sourceBytes.isEmpty()) return {};
     const auto pr = WildPalms::PalmSync::PalmRecord::fromWireBytes(sourceBytes);
-    return encodePalmToIcs(pr);
+    return encodePalmToIcs(pr, m_cats, QStringLiteral("DatebookDB"));
+}
+
+IcsToPalmStage::IcsToPalmStage(const WildPalms::PalmCalendar::CategoryMappingStore *cats)
+    : m_cats(cats)
+{
 }
 
 QByteArray IcsToPalmStage::transform(const QByteArray &sourceBytes) const
 {
     if (sourceBytes.isEmpty()) return {};
-    // slotHint = -1 is clamped to 0 by DatebookCodec::encode, so the category
-    // field of this stage's output is NOT authoritative. The backend
-    // (createRecord/updateRecord) sets the real slot from collection context on
-    // write; X-WP-PALM-CATEGORY-SLOT rides on the Event but encode() does not
-    // read it back. Treat the wire bytes' category as undefined after this stage.
-    const auto prOpt = decodeIcsToPalm(sourceBytes, /*slotHint*/ -1);
+    // The category slot is derived from the iCalendar CATEGORIES property via
+    // the borrowed CategoryMappingStore (name -> slot). With no store / no
+    // categories the slot is 0 (Unfiled).
+    const auto prOpt = decodeIcsToPalm(sourceBytes, m_cats, QStringLiteral("DatebookDB"));
     if (!prOpt) return {};
     return prOpt->toWireBytes();
 }
@@ -47,7 +55,8 @@ LossProfile icsToPalmLoss()
     p.affected.insert(PropertyId{QStringLiteral("status")},          LossKind::Dropped);
     p.affected.insert(PropertyId{QStringLiteral("url")},             LossKind::Dropped);
     p.affected.insert(PropertyId{QStringLiteral("attachments")},     LossKind::Dropped);
-    p.affected.insert(PropertyId{QStringLiteral("categories")},      LossKind::Dropped);
+    // categories is NO LONGER dropped: the Palm category slot carries the
+    // canonical `categories` field (name-based) via CategoryMappingStore.
     p.affected.insert(PropertyId{QStringLiteral("timeTransparency")},LossKind::Dropped);
     p.affected.insert(PropertyId{QStringLiteral("freeBusyStatus")},  LossKind::Dropped);
     p.affected.insert(PropertyId{QStringLiteral("onlineMeeting")},   LossKind::Dropped);

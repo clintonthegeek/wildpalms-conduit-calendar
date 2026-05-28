@@ -41,7 +41,7 @@ CalendarBackendPlugin::~CalendarBackendPlugin() = default;
 QList<std::shared_ptr<Kalburator::Shape::ShapeContribution>>
 CalendarBackendPlugin::shapeContributions() const
 {
-    return { std::make_shared<CalendarPalmShapes>() };
+    return { std::make_shared<CalendarPalmShapes>(m_categoryStore.get()) };
 }
 
 QString CalendarBackendPlugin::displayName() const { return QStringLiteral("Calendar"); }

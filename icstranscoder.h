@@ -5,7 +5,11 @@
 
 #include <QByteArray>
 
+#include <QString>
+
 #include "palm/sync/palmrecord.h"
+
+namespace WildPalms::PalmCalendar { class CategoryMappingStore; }
 
 namespace WildPalms::CalendarPlugin {
 
@@ -19,22 +23,35 @@ namespace WildPalms::CalendarPlugin {
  * Pure function. The `record.category` field is preserved on the
  * Event via DatebookCodec's existing X-WP-PALM-CATEGORY-SLOT
  * property, so re-encoding round-trips the slot.
+ *
+ * If `cats` is non-null and `record.category != 0`, the slot's display
+ * name (via CategoryMappingStore::slotName(dbName, slot)) is written to
+ * the Event's CATEGORIES property — libkalburator's ical<->canon stage
+ * then carries it into canon `categories`. A null `cats` emits no
+ * categories (degrades gracefully).
  */
-QByteArray encodePalmToIcs(const WildPalms::PalmSync::PalmRecord &record);
+QByteArray encodePalmToIcs(const WildPalms::PalmSync::PalmRecord &record,
+                           const WildPalms::PalmCalendar::CategoryMappingStore *cats,
+                           const QString &dbName);
 
 /**
- * @brief Decode VCALENDAR bytes into a PalmRecord with the given slot.
+ * @brief Decode VCALENDAR bytes into a PalmRecord.
  *
- * `slotHint` is forwarded to DatebookCodec::encode and stamped into
- * `PalmRecord::category`. The Event's X-WP-PALM-RECORDID property
- * (if present) populates `PalmRecord::recordId`; otherwise recordId
- * stays 0 and the device assigns on write.
+ * The category slot is derived from the Event's CATEGORIES property: if
+ * `cats` is non-null and the event carries at least one category, the
+ * first category name is mapped back to a slot via
+ * CategoryMappingStore::slotForName(dbName, name). A null `cats` (or no
+ * categories) yields slot 0 (Unfiled). The Event's X-WP-PALM-RECORDID
+ * property (if present) populates `PalmRecord::recordId`; otherwise
+ * recordId stays 0 and the device assigns on write.
  *
  * Returns std::nullopt if `icsBytes` doesn't parse as a single
  * VEVENT, or if encoding to Palm bytes fails.
  */
 std::optional<WildPalms::PalmSync::PalmRecord>
-decodeIcsToPalm(const QByteArray &icsBytes, int slotHint);
+decodeIcsToPalm(const QByteArray &icsBytes,
+                const WildPalms::PalmCalendar::CategoryMappingStore *cats,
+                const QString &dbName);
 
 } // namespace WildPalms::CalendarPlugin
 

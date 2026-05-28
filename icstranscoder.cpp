@@ -5,13 +5,24 @@
 #include <KCalendarCore/MemoryCalendar>
 
 #include "palm/calendar/datebookcodec.h"
+#include "palm/calendar/categorymappingstore.h"
 
 namespace WildPalms::CalendarPlugin {
 
-QByteArray encodePalmToIcs(const WildPalms::PalmSync::PalmRecord &record)
+QByteArray encodePalmToIcs(const WildPalms::PalmSync::PalmRecord &record,
+                           const WildPalms::PalmCalendar::CategoryMappingStore *cats,
+                           const QString &dbName)
 {
     auto decoded = WildPalms::PalmCalendar::DatebookCodec::decode(record);
     if (!decoded.isValid()) return {};
+
+    // Carry the Palm category slot as the iCalendar CATEGORIES property
+    // (name-based). libkalburator's ical<->canon stage lifts it into
+    // canon `categories`.
+    if (cats && record.category != 0) {
+        const QString nm = cats->slotName(dbName, record.category);
+        if (!nm.isEmpty()) decoded.event->setCategories(QStringList{nm});
+    }
 
     auto cal = KCalendarCore::MemoryCalendar::Ptr(
         new KCalendarCore::MemoryCalendar(QTimeZone::utc()));
@@ -22,7 +33,9 @@ QByteArray encodePalmToIcs(const WildPalms::PalmSync::PalmRecord &record)
 }
 
 std::optional<WildPalms::PalmSync::PalmRecord>
-decodeIcsToPalm(const QByteArray &icsBytes, int slotHint)
+decodeIcsToPalm(const QByteArray &icsBytes,
+                const WildPalms::PalmCalendar::CategoryMappingStore *cats,
+                const QString &dbName)
 {
     if (icsBytes.isEmpty()) return std::nullopt;
 
@@ -38,7 +51,13 @@ decodeIcsToPalm(const QByteArray &icsBytes, int slotHint)
     auto event = events.first();
     if (!event) return std::nullopt;
 
-    return WildPalms::PalmCalendar::DatebookCodec::encode(event, slotHint);
+    // Map the first CATEGORIES name back to a Palm slot. No store or no
+    // categories => slot 0 (Unfiled).
+    const int slot = (cats && !event->categories().isEmpty())
+        ? cats->slotForName(dbName, event->categories().constFirst())
+        : 0;
+
+    return WildPalms::PalmCalendar::DatebookCodec::encode(event, slot);
 }
 
 } // namespace WildPalms::CalendarPlugin
