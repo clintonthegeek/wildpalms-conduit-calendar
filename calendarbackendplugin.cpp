@@ -157,4 +157,10 @@ QStringList CalendarBackendPlugin::categorySlotNames() const
     return m_categoryStore->sixteenSlotNames(primaryDbName());
 }
 
+WildPalms::PalmCalendar::CategoryMappingStore *
+CalendarBackendPlugin::categoryStore() const
+{
+    return m_categoryStore.get();
+}
+
 } // namespace WildPalms::CalendarPlugin

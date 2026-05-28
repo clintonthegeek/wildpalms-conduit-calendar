@@ -63,6 +63,9 @@ public:
     QString     primaryDbName()       const { return QStringLiteral("DatebookDB"); }
     QStringList categorySlotNames()   const;
 
+    // Task 3: borrowed accessor for hub<->remote routing translation.
+    WildPalms::PalmCalendar::CategoryMappingStore *categoryStore() const;
+
     // Palm backend — called directly by PalmRuntime (Task 6)
     std::unique_ptr<Kalburator::Sync::SyncBackend>
         createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device);
