@@ -1,6 +1,6 @@
 #include "hubcalendarreader.h"
 
-#include <syncbackend.h>
+#include <syncbackendbase.h>
 #include <backendrecord.h>
 
 namespace {
@@ -22,7 +22,7 @@ QString stripCollectionPrefix(const QString &recordId,
 
 namespace WildPalms::CalendarPlugin {
 
-HubCalendarReader::HubCalendarReader(Kalburator::Sync::SyncBackend *hub,
+HubCalendarReader::HubCalendarReader(Kalburator::Sync::SyncBackendBase *hub,
                                      QString collectionId)
     : m_hub(hub)
     , m_collectionId(std::move(collectionId))

@@ -116,7 +116,7 @@ QWidget *CalendarBackendPlugin::createMainView(QWidget *parent) const
     return v;
 }
 
-void CalendarBackendPlugin::setHub(Kalburator::Sync::SyncBackend *hub)
+void CalendarBackendPlugin::setHub(Kalburator::Sync::SyncBackendBase *hub)
 {
     Q_ASSERT(hub);
     m_hubReader = std::make_unique<WildPalms::CalendarPlugin::HubCalendarReader>(
