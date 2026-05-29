@@ -1,5 +1,6 @@
 #include "calendarbackendplugin.h"
 
+#include "hubcalendarreader.h"
 #include "palmcalendarbackend.h"
 #include "calendarconflicthandler.h"
 #include "calendardomainextension.h"
@@ -10,6 +11,7 @@
 #include "palm/conflict/palmbackendconfig.h"
 #include "palm/sync/palmbackend.h"
 #include "runtime/palmdeviceaccess.h"
+#include "runtime/palmruntime.h"
 
 #include "conflictrecord.h"
 
@@ -104,7 +106,26 @@ bool CalendarBackendPlugin::hasMainView() const { return true; }
 
 QWidget *CalendarBackendPlugin::createMainView(QWidget *parent) const
 {
-    return new CalendarView(parent);
+    auto *v = new CalendarView(parent);
+    v->setHubReader(m_hubReader.get());
+    if (m_runtime) {
+        QObject::connect(m_runtime,
+                         &WildPalms::Runtime::PalmRuntime::syncCompleted,
+                         v, &CalendarView::refresh);
+    }
+    return v;
+}
+
+void CalendarBackendPlugin::setHub(Kalburator::Sync::SyncBackend *hub)
+{
+    Q_ASSERT(hub);
+    m_hubReader = std::make_unique<WildPalms::CalendarPlugin::HubCalendarReader>(
+        hub, QStringLiteral("palm:calendar"));
+}
+
+void CalendarBackendPlugin::setRuntime(WildPalms::Runtime::PalmRuntime *runtime)
+{
+    m_runtime = runtime;
 }
 
 QString CalendarBackendPlugin::mainViewName() const { return QStringLiteral("Calendar"); }

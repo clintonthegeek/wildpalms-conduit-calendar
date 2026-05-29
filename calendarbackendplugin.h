@@ -3,14 +3,15 @@
 
 #include <memory>
 
-#include "plugin.h"
+#include "plugins/pimplugin.h"
 
 namespace Kalburator::Conflict { struct RecordSnapshot; class ConflictHandler; }
 namespace Kalburator::Sync { class SyncBackend; }
+namespace WildPalms::CalendarPlugin { class HubCalendarReader; }
 namespace WildPalms::PalmCalendar { class CategoryMappingStore; }
 namespace WildPalms::PalmConflict { struct PalmBackendConfig; }
 namespace WildPalms::PalmSync { class PalmBackend; }
-namespace WildPalms::Runtime { class PalmDeviceAccess; }
+namespace WildPalms::Runtime { class PalmDeviceAccess; class PalmRuntime; }
 
 class QIcon;
 class QWidget;
@@ -30,7 +31,7 @@ namespace WildPalms::CalendarPlugin {
  *     delegation).
  *   - CalendarView as a main-window tab.
  */
-class CalendarBackendPlugin : public Kalburator::Plugin
+class CalendarBackendPlugin : public WildPalms::Plugins::PimPlugin
 {
 public:
     CalendarBackendPlugin();
@@ -66,6 +67,10 @@ public:
     // Task 3: borrowed accessor for hub<->remote routing translation.
     WildPalms::PalmCalendar::CategoryMappingStore *categoryStore() const;
 
+    // Sub-project D: PimPlugin lifecycle hooks.
+    void setHub(Kalburator::Sync::SyncBackend *hub) override;
+    void setRuntime(WildPalms::Runtime::PalmRuntime *runtime) override;
+
     // Palm backend — called directly by PalmRuntime (Task 6)
     std::unique_ptr<Kalburator::Sync::SyncBackend>
         createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device);
@@ -91,6 +96,11 @@ private:
     std::unique_ptr<WildPalms::PalmConflict::PalmBackendConfig>    m_palmConfig;
     std::unique_ptr<WildPalms::PalmSync::PalmBackend>              m_palmBackend;
     WildPalms::Runtime::PalmDeviceAccess *m_device = nullptr;   // borrowed; cached for createConflictHandler
+
+    // Sub-project D: per-domain reader over the canonical hub; constructed
+    // in setHub, fed to CalendarView in createMainView.
+    std::unique_ptr<WildPalms::CalendarPlugin::HubCalendarReader> m_hubReader;
+    WildPalms::Runtime::PalmRuntime *m_runtime = nullptr;       // borrowed
 };
 
 } // namespace WildPalms::CalendarPlugin

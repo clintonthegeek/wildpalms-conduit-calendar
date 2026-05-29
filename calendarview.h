@@ -17,6 +17,8 @@ class CategoryManager;
 class CategoryModel;
 class CategoryFilterWidget;
 
+namespace WildPalms::CalendarPlugin { class HubCalendarReader; }
+
 /**
  * @brief Calendar data browser view
  *
@@ -35,6 +37,7 @@ public:
 public Q_SLOTS:
     void loadFromPath(const QString &syncPath);
     void refresh();
+    void setHubReader(WildPalms::CalendarPlugin::HubCalendarReader *reader);
 
 private Q_SLOTS:
     void onDateSelected();
@@ -82,6 +85,7 @@ private:
     QTextEdit *m_detailsView;
 
     QString m_syncPath;
+    WildPalms::CalendarPlugin::HubCalendarReader *m_hubReader = nullptr; // borrowed
     QList<EventItem> m_events;
     // Map of date -> list of event indices (including recurring occurrences)
     QMap<QDate, QList<int>> m_dateToEvents;

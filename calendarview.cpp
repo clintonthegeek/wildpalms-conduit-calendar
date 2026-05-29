@@ -1,10 +1,12 @@
 #include "calendarview.h"
+#include "hubcalendarreader.h"
 #include "widgets/common/categorymanager.h"
 #include "widgets/common/categorymodel.h"
 #include "widgets/common/categoryfilterwidget.h"
 #include "widgets/dialogs/categoryeditordialog.h"
 
 #include <QVBoxLayout>
+#include <QBuffer>
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QCalendarWidget>
@@ -116,6 +118,11 @@ void CalendarView::refresh()
     loadEvents();
 }
 
+void CalendarView::setHubReader(WildPalms::CalendarPlugin::HubCalendarReader *reader)
+{
+    m_hubReader = reader;
+}
+
 void CalendarView::loadEvents()
 {
     m_events.clear();
@@ -124,47 +131,34 @@ void CalendarView::loadEvents()
     m_itemToIndex.clear();
     m_detailsView->clear();
 
-    if (m_syncPath.isEmpty()) {
-        m_eventList->addItem(i18n("No sync folder selected"));
-        return;
-    }
-
-    // Aggregate-read across all per-Palm-collection subdirs under
-    // <sync>/rawfiles/calendar/<col>/ (PalmRuntime writes one dir per
-    // Palm slot — palm_calendar_0, palm_calendar_1, ...).
-    QDir rawfilesDir(m_syncPath + QStringLiteral("/rawfiles/calendar"));
-    if (!rawfilesDir.exists()) {
+    if (!m_hubReader) {
         m_eventList->addItem(i18n("No calendar data found"));
         return;
     }
-    QStringList filters;
-    filters << QStringLiteral("*.ics");
-    QFileInfoList files;
-    const QFileInfoList colDirs = rawfilesDir.entryInfoList(
-        QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-    for (const QFileInfo &col : colDirs) {
-        files.append(QDir(col.filePath()).entryInfoList(
-            filters, QDir::Files, QDir::Name));
-    }
-    if (files.isEmpty()) {
+
+    const QStringList ids = m_hubReader->listRecordIds();
+    if (ids.isEmpty()) {
         m_eventList->addItem(i18n("No calendar data found"));
         return;
     }
 
     KCalendarCore::ICalFormat format;
 
-    for (const QFileInfo &fileInfo : files) {
+    for (const QString &recordId : ids) {
+        const QByteArray bytes = m_hubReader->recordBytes(recordId);
+        if (bytes.isEmpty()) continue;
+
         KCalendarCore::MemoryCalendar::Ptr calendar(
             new KCalendarCore::MemoryCalendar(QTimeZone::systemTimeZone()));
 
-        if (!format.load(calendar, fileInfo.filePath())) {
+        if (!format.fromString(calendar, QString::fromUtf8(bytes))) {
             continue;
         }
 
         KCalendarCore::Event::List kcalEvents = calendar->events();
         for (const KCalendarCore::Event::Ptr &kcalEvent : kcalEvents) {
             EventItem event;
-            event.filePath = fileInfo.filePath();
+            event.filePath = recordId;  // hub record id, used to refetch bytes for recurrence
             event.uid = kcalEvent->uid();
             event.recordId = 0;
             event.summary = kcalEvent->summary();
@@ -304,12 +298,18 @@ void CalendarView::highlightDates()
         }
 
         if (event.isRecurring) {
-            // Load the file again to use KCalendarCore recurrence expansion
+            // Re-fetch bytes from the hub to use KCalendarCore recurrence expansion.
+            // event.filePath stores the hub record id (set in loadEvents).
             KCalendarCore::MemoryCalendar::Ptr calendar(
                 new KCalendarCore::MemoryCalendar(QTimeZone::systemTimeZone()));
             KCalendarCore::ICalFormat format;
 
-            if (format.load(calendar, event.filePath)) {
+            const QByteArray bytes = m_hubReader
+                ? m_hubReader->recordBytes(event.filePath)
+                : QByteArray();
+
+            if (!bytes.isEmpty()
+                && format.fromString(calendar, QString::fromUtf8(bytes))) {
                 KCalendarCore::Event::List kcalEvents = calendar->events();
                 for (const KCalendarCore::Event::Ptr &kcalEvent : kcalEvents) {
                     if (kcalEvent->uid() == event.uid) {
