@@ -6,6 +6,7 @@ add_library(wildpalms_calendar_static STATIC
     palmtoicstransformation.cpp    palmtoicstransformation.h
     calendardomainextension.cpp    calendardomainextension.h
     calendarview.cpp               calendarview.h
+    hubcalendarreader.cpp          hubcalendarreader.h
 )
 
 target_include_directories(wildpalms_calendar_static
