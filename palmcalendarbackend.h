@@ -47,6 +47,14 @@ public:
     bool    updateRecord(const Kalburator::Sync::BackendRecord &record) override;
     bool    deleteRecord(const QString &recordId) override;
 
+    // IBlobBackend wipe (clobber-sync) — fast-path override of the
+    // default per-record loop: drops the underlying DatebookDB on the
+    // device and recreates it empty, so the engine's subsequent push
+    // re-populates from the source. collectionId is accepted for
+    // signature compliance but ignored — the classic Datebook DB is
+    // shared across category slots.
+    bool wipeCollection(const QString &collectionId) override;
+
     // IBlobBackend change detection
     QList<Kalburator::Sync::BackendRecord> modifiedSince(
         const QString &collectionId, const QDateTime &since) override;

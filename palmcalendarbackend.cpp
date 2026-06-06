@@ -219,6 +219,16 @@ bool PalmCalendarBackend::deleteRecord(const QString &recordId)
     return m_palmBackend->deletePalmRecord(QStringLiteral("DatebookDB"), rid);
 }
 
+bool PalmCalendarBackend::wipeCollection(const QString &collectionId)
+{
+    // collectionId is "palm:calendar" or "palm:calendar/<slot>"; either
+    // way the underlying classic DatebookDB is wiped (it is shared
+    // across all category slots — wiping is a database-level op).
+    Q_UNUSED(collectionId);
+    if (!m_palmBackend) return false;
+    return m_palmBackend->wipePalmDatabase(QStringLiteral("DatebookDB"));
+}
+
 QList<Kalburator::Sync::BackendRecord>
 PalmCalendarBackend::modifiedSince(const QString &collectionId,
                                    const QDateTime &since)
