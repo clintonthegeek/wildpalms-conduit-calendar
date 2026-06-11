@@ -64,7 +64,7 @@ QString CalendarBackendPlugin::description() const
 }
 QString CalendarBackendPlugin::version()     const { return QStringLiteral("2.0"); }
 
-std::unique_ptr<Kalburator::Sync::SyncBackend>
+std::unique_ptr<Kalburator::Sync::SyncBackendBase>
 CalendarBackendPlugin::createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device)
 {
     if (!device) return nullptr;

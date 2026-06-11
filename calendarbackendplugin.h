@@ -54,33 +54,43 @@ public:
     QIcon       icon()             const;
     QString     description()      const;
     QString     version()          const;
-    QStringList claimedDatabases() const { return {QStringLiteral("DatebookDB")}; }
+    QStringList claimedDatabases() const override { return {QStringLiteral("DatebookDB")}; }
+
+    // ── Conduit descriptor (PimPlugin virtuals, substrate A1) ──────
+    QString conduitId() const override { return pluginId(); }
+    Kalburator::Shape::DomainId domain() const override
+    { return Kalburator::Shape::DomainId{QStringLiteral("calendar")}; }
+    QString conduitDisplayName() const override { return displayName(); }
+    QString conduitIconName() const override
+    { return QStringLiteral("office-calendar"); }
 
     // F.3: Category slot snapshot — used by PalmRuntime::finishConnect to
     // write the snapshot into Profile after createPalmBackend populates
     // m_categoryStore from the live AppInfo block. Returns empty list if
     // the store hasn't been populated yet (e.g., createPalmBackend was
     // never called).
-    QString     primaryDbName()       const { return QStringLiteral("DatebookDB"); }
-    QStringList categorySlotNames()   const;
+    QString     primaryDbName()       const override { return QStringLiteral("DatebookDB"); }
+    QStringList categorySlotNames()   const override;
 
     // Task 3: borrowed accessor for hub<->remote routing translation.
-    WildPalms::PalmCalendar::CategoryMappingStore *categoryStore() const;
+    WildPalms::PalmCalendar::CategoryMappingStore *categoryStore() const override;
 
     // Sub-project D: PimPlugin lifecycle hooks.
     void setHub(Kalburator::Sync::SyncBackendBase *hub) override;
     void setRuntime(WildPalms::Runtime::PalmRuntime *runtime) override;
 
-    // Palm backend — called directly by PalmRuntime (Task 6)
-    std::unique_ptr<Kalburator::Sync::SyncBackend>
-        createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device);
+    // Palm backend — called directly by PalmRuntime (Task 6).
+    // Substrate A1: return type widened to SyncBackendBase to match the
+    // PimPlugin::createPalmBackend descriptor (unique_ptr is not covariant).
+    std::unique_ptr<Kalburator::Sync::SyncBackendBase>
+        createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device) override;
 
     // Conflict handler
-    Kalburator::Conflict::ConflictHandler *createConflictHandler();
+    Kalburator::Conflict::ConflictHandler *createConflictHandler() override;
 
     // Main view
-    bool     hasMainView()   const;
-    QWidget *createMainView(QWidget *parent) const;
+    bool     hasMainView()   const override;
+    QWidget *createMainView(QWidget *parent) const override;
     QString  mainViewName()  const;
     QIcon    mainViewIcon()  const;
 
