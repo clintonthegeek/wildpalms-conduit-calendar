@@ -4,6 +4,8 @@
 #include "syncbackend.h"
 #include "syncoperation.h"   // Kalburator::Sync::{Fetch,Push,Delete}Operation complete-type for covariant overrides
 
+#include "palm/sync/palmchangedetection.h"
+
 #include <QObject>
 
 namespace WildPalms::PalmSync { class PalmBackend; }
@@ -11,7 +13,8 @@ namespace WildPalms::PalmCalendar { class CategoryMappingStore; }
 
 namespace WildPalms::CalendarPlugin {
 
-class PalmCalendarBackend final : public Kalburator::Sync::SyncBackend
+class PalmCalendarBackend final : public Kalburator::Sync::SyncBackend,
+                                   public WildPalms::PalmSync::PalmChangeDetection
 {
     Q_OBJECT
 public:
@@ -85,6 +88,9 @@ Q_SIGNALS:
     void recordDeleted(const QString &recordId);
     void errorOccurred(const QString &error);
     void progressUpdated(int current, int total, const QString &message);
+
+protected:
+    QString currentDbRevision() const override;
 
 private:
     WildPalms::PalmSync::PalmBackend                    *m_palmBackend   = nullptr;

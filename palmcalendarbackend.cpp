@@ -42,6 +42,12 @@ PalmCalendarBackend::PalmCalendarBackend(
 
 PalmCalendarBackend::~PalmCalendarBackend() = default;
 
+QString PalmCalendarBackend::currentDbRevision() const
+{
+    return m_palmBackend ? m_palmBackend->databaseRevision(QStringLiteral("DatebookDB"))
+                         : QString();
+}
+
 QList<Kalburator::Shape::Shape> PalmCalendarBackend::nativeShapes() const
 {
     return { { Kalburator::Shape::DomainId{QStringLiteral("calendar")},
